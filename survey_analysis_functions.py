@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
-import ols
 import time
 
 def ncr(n, r):
@@ -95,7 +94,7 @@ def quantile_identify(in_series, n_quantiles = 4, plot_dist = False, plot_title 
 
 def egoa(in_series, group_size, uneven_last = True, plot_dist = False, plot_title = False, x_axis_label = '', y_axis_label = ''):
     '''Even group ordinal aggregation. Similar to quantile identify, but all groups (except the first or last) are guaranteed to have the same size'''
-    in_series = in_series.sort(inplace = False)
+    in_series = in_series.sort(inplace = False) #Sort series
     if plot_dist:
         try:
             from scipy.stats import gaussian_kde
@@ -106,32 +105,39 @@ def egoa(in_series, group_size, uneven_last = True, plot_dist = False, plot_titl
             plot_title = ''
             x_axis_label = ''
             y_axis_label = ''
-    if plot_dist:
+    
         support = np.linspace(0, in_series.max(), 1000)
         d = gaussian_kde(in_series)
         plt.plot(support, d(support), color = '#000000')
-    n_groups = int(np.ceil(float(len(in_series))/group_size))
+
+    n_groups = int(np.ceil(float(len(in_series))/group_size)) #Compute the number of groups based on inputs
     out_series = pd.Series(index = in_series.index)
+
+    #Check if the last group is to be the group smaller than the others
     if uneven_last:
         for i in range(1, n_groups):
+            #Define all of the elements in each group, and set their corresponting outputs to be the group number
             current_set = in_series.iloc[(i-1)*group_size:i*group_size]
             for item in current_set.index:
                 out_series.loc[item] = i
             if plot_dist:
                 x = in_series.iloc[i*group_size]
                 plt.plot([x, x], [0, d(x)], linestyle = '--', color = '#000000')
+        #Now do this for the final group
         final_set = in_series.iloc[(n_groups-1)*group_size:]
         for item in final_set.index:
             out_series.loc[item] = n_groups
     else:
         n = len(in_series)
         for i in range(1, n_groups):
+            #Define all of the elements in each group, and set their corresponting outputs to be the group number
             current_set = in_series.iloc[n-i*group_size:n-(i-1)*group_size]
             for item in current_set.index:
                 out_series.loc[item] = n_groups - i + 1
             if plot_dist:
                 x = in_series.iloc[n-i*group_size]
                 plt.plot([x, x], [0, d(x)], linestyle = '--', color = '#000000')
+        #Now do this for the first group
         initial_set = in_series.iloc[:n-(n_groups-1)*group_size]
         for item in initial_set.index:
             out_series.loc[item] = 1
